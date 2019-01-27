@@ -5,7 +5,7 @@ LABEL Maintainer="Tim de Pater <code@trafex.nl>" \
 # Install packages from testing repo's
 RUN apk --no-cache add php7 php7-fpm php7-mysqli php7-json php7-openssl php7-curl \
     php7-zlib php7-xml php7-phar php7-intl php7-dom php7-xmlreader php7-xmlwriter \
-    php7-simplexml php7-ctype php7-mbstring php7-gd nginx supervisor curl bash less
+    php7-simplexml php7-ctype php7-mbstring php7-gd nginx curl bash less
 
 # Configure nginx
 COPY config/nginx.conf /etc/nginx/nginx.conf
@@ -15,7 +15,9 @@ COPY config/fpm-pool.conf /etc/php7/php-fpm.d/zzz_custom.conf
 COPY config/php.ini /etc/php7/conf.d/zzz_custom.ini
 
 # Configure supervisord
-COPY config/supervisord.conf /etc/supervisor/conf.d/supervisord.conf
+# COPY config/supervisord.conf /etc/supervisor/conf.d/supervisord.conf
+
+
 
 # wp-content volume
 VOLUME /var/www/wp-content
@@ -36,8 +38,8 @@ RUN curl -o wordpress.tar.gz -SL https://wordpress.org/wordpress-${WORDPRESS_VER
 	&& chown -R nobody.nobody /usr/src/wordpress
 
 # Add WP CLI
-RUN curl -o /usr/local/bin/wp https://raw.githubusercontent.com/wp-cli/builds/gh-pages/phar/wp-cli.phar \
-    && chmod +x /usr/local/bin/wp
+# RUN curl -o /usr/local/bin/wp https://raw.githubusercontent.com/wp-cli/builds/gh-pages/phar/wp-cli.phar \
+#    && chmod +x /usr/local/bin/wp
 
 # WP config
 COPY wp-config.php /usr/src/wordpress
@@ -47,12 +49,17 @@ RUN chown nobody.nobody /usr/src/wordpress/wp-config.php && chmod 640 /usr/src/w
 COPY wp-secrets.php /usr/src/wordpress
 RUN chown nobody.nobody /usr/src/wordpress/wp-secrets.php && chmod 640 /usr/src/wordpress/wp-secrets.php
 
+COPY ../init_script.sh /init_script.sh
+
 # Entrypoint to copy wp-content
 COPY entrypoint.sh /entrypoint.sh
 ENTRYPOINT [ "/entrypoint.sh" ]
 
-EXPOSE 80
+USER nobody
 
-CMD ["/usr/bin/supervisord", "-c", "/etc/supervisor/conf.d/supervisord.conf"]
+EXPOSE 8080
+
+# CMD ["/usr/bin/supervisord", "-c", "/etc/supervisor/conf.d/supervisord.conf"]
+CMD ./init_script.sh
 
 HEALTHCHECK --timeout=10s CMD curl --silent --fail http://127.0.0.1/wp-login.php
