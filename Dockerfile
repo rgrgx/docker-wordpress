@@ -55,7 +55,7 @@ COPY ../init_script.sh /init_script.sh
 COPY entrypoint.sh /entrypoint.sh
 ENTRYPOINT [ "/entrypoint.sh" ]
 
-USER nobody
+# USER nobody
 
 EXPOSE 8080
 
